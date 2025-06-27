@@ -3,7 +3,7 @@
 ![](/.github/assets/presentation.png)
 
 <p align="center">
-  Twitter clone built in Next.js + TypeScript + Tailwind CSS using Cloud Firestore and Storage
+  Twitter clone built in Next.js + TypeScript + Tailwind CSS using Supabase
 </p>
 
 ## Preview 🎬
@@ -12,11 +12,11 @@ https://user-images.githubusercontent.com/55032197/201472767-9db0177a-79b5-4913-
 
 ## Features ✨
 
-- Authentication with Firebase Authentication
+- Authentication with Supabase Auth (Google OAuth)
 - Strongly typed React components with TypeScript
 - Users can add tweets, like, retweet, and reply
 - Users can delete tweets, add a tweet to bookmarks, and pin their tweet
-- Users can add images and GIFs to tweet
+- Users can add images and videos to tweets
 - Users can follow and unfollow other users
 - Users can see their and other followers and the following list
 - Users can see all users and the trending list
@@ -25,14 +25,14 @@ https://user-images.githubusercontent.com/55032197/201472767-9db0177a-79b5-4913-
 - User can edit their profile
 - Responsive design for mobile, tablet, and desktop
 - Users can customize the site color scheme and color background
-- All images uploads are stored on Firebase Cloud Storage
+- All images uploads are stored on Supabase Storage
 
 ## Tech 🛠
 
 - [Next.js](https://nextjs.org)
 - [TypeScript](https://www.typescriptlang.org)
 - [Tailwind CSS](https://tailwindcss.com)
-- [Firebase](https://firebase.google.com)
+- [Supabase](https://supabase.com)
 - [SWR](https://swr.vercel.app)
 - [Headless UI](https://headlessui.com)
 - [React Hot Toast](https://react-hot-toast.com)
@@ -48,77 +48,56 @@ Here are the steps to run the project locally.
    git clone https://github.com/ccrsxx/twitter-clone.git
    ```
 
-1. Install dependencies
+2. Install dependencies
 
    ```bash
    npm i
    ```
 
-1. Create a Firebase project and select the web app
+3. Create a Supabase project at [supabase.com](https://supabase.com)
 
-1. Add your Firebase config to `.env.development`. Note that `NEXT_PUBLIC_MEASUREMENT_ID` is optional
+4. Set up your Supabase project:
+   - Go to Settings > API to get your project URL and anon key
+   - Enable Google OAuth in Authentication > Providers
+   - Run the SQL migrations in the `supabase/migrations` folder in your Supabase SQL editor
+   - Create a storage bucket named "images" in Storage
 
-1. Make sure you have enabled the following Firebase services:
+5. Add your Supabase config to `.env.development`:
 
-   - Authentication. Enable the Google sign-in method.
-   - Cloud Firestore. Create a database and set its location to your nearest region.
-   - Cloud Storage. Create a storage bucket.
-
-1. Install Firebase CLI globally
-
-   ```bash
-   npm i -g firebase-tools
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-1. Log in to Firebase
+6. Run the project
 
    ```bash
-   firebase login
+   npm run dev
    ```
 
-1. Get your project ID
+7. Optional: Add Twitter API credentials for trending data
 
-   ```bash
-   firebase projects:list
+   ```env
+   TWITTER_BEARER_TOKEN=your_twitter_bearer_token
    ```
 
-1. Select your project ID
+## Database Schema
 
-   ```bash
-   firebase use your-project-id
-   ```
+The project uses the following Supabase tables:
 
-1. At this point, you have two choices. Either run this project using the Firebase on the cloud or locally using emulator.
+- **users** - User profiles and settings
+- **tweets** - Tweet content and metadata
+- **bookmarks** - User bookmarks
+- **user_stats** - User interaction statistics
 
-   1. Using the Firebase Cloud Backend:
+All tables have Row Level Security (RLS) enabled for data protection.
 
-      1. Deploy Firestore rules, Firestore indexes, and Cloud Storage rules
+## Deployment
 
-         ```bash
-         firebase deploy --except functions
-         ```
+1. Deploy to Vercel or your preferred platform
+2. Add environment variables in your deployment platform
+3. Your app is ready! 🚀
 
-      1. Run the project
+## Contributing
 
-         ```bash
-         npm run dev
-         ```
-
-   1. Using Firebase Local Emulator:
-
-      1. Install [Java JDK version 11 or higher](https://jdk.java.net/) before proceeding. This is required to run the emulators.
-
-      1. Set the environment variable `NEXT_PUBLIC_USE_EMULATOR` to `true` in `.env.development`. This will make the app use the emulators instead of the cloud backend.
-
-      1. At this point, you can run the following command to have a fully functional Twitter clone running locally:
-
-         ```bash
-         npm run dev:emulators
-         ```
-
-> **_Note_**: When you deploy Firestore indexes rules, it might take a few minutes to complete. So before the indexes are enabled, you will get an error when you fetch the data from Firestore.<br><br>You can check the status of your Firestore indexes with the link below, replace `your-project-id` with your project ID: https://console.firebase.google.com/u/0/project/your-project-id/firestore/indexes
-
-Optional:
-
-- If you want to get trending data from Twitter API, you need to create a Twitter developer account and get your API keys. Then add your API keys to `.env.development`. I hope Elon Musk doesn't make this API paid 😅.
-- If you want to make the user stats synced with the deleted tweets, you need to enable the Cloud Functions for Firebase. Then deploy the Cloud Functions.
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.

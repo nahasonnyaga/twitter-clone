@@ -1,18 +1,8 @@
-import type { Timestamp, FirestoreDataConverter } from 'firebase/firestore';
-
 export type Stats = {
+  id: string;
+  user_id: string;
   likes: string[];
   tweets: string[];
-  updatedAt: Timestamp | null;
-};
-
-export const statsConverter: FirestoreDataConverter<Stats> = {
-  toFirestore(bookmark) {
-    return { ...bookmark };
-  },
-  fromFirestore(snapshot, options) {
-    const data = snapshot.data(options);
-
-    return { ...data } as Stats;
-  }
+  updated_at: string | null;
+  created_at: string;
 };

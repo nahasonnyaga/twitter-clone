@@ -1,5 +1,4 @@
 import type { Theme, Accent } from './theme';
-import type { Timestamp, FirestoreDataConverter } from 'firebase/firestore';
 
 export type User = {
   id: string;
@@ -10,31 +9,22 @@ export type User = {
   website: string | null;
   location: string | null;
   username: string;
-  photoURL: string;
+  email: string;
+  photo_url: string;
   verified: boolean;
   following: string[];
   followers: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp | null;
-  totalTweets: number;
-  totalPhotos: number;
-  pinnedTweet: string | null;
-  coverPhotoURL: string | null;
+  created_at: string;
+  updated_at: string | null;
+  total_tweets: number;
+  total_photos: number;
+  pinned_tweet: string | null;
+  cover_photo_url: string | null;
 };
 
 export type EditableData = Extract<
   keyof User,
-  'bio' | 'name' | 'website' | 'photoURL' | 'location' | 'coverPhotoURL'
+  'bio' | 'name' | 'website' | 'photo_url' | 'location' | 'cover_photo_url'
 >;
 
 export type EditableUserData = Pick<User, EditableData>;
-
-export const userConverter: FirestoreDataConverter<User> = {
-  toFirestore(user) {
-    return { ...user };
-  },
-  fromFirestore(snapshot, options) {
-    const data = snapshot.data(options);
-    return { ...data } as User;
-  }
-};

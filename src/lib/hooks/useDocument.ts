@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getDoc, doc, onSnapshot } from 'firebase/firestore';
-import { usersCollection } from '@lib/firebase/collections';
-import { useCacheRef } from './useCacheRef';
-import type { DocumentReference } from 'firebase/firestore';
+import { supabase } from '@lib/supabase/client';
 import type { User } from '@lib/types/user';
 
 type UseDocument<T> = {
@@ -10,32 +7,32 @@ type UseDocument<T> = {
   loading: boolean;
 };
 
-type DataWithRef<T> = T & { createdBy: string };
 type DataWithUser<T> = UseDocument<T & { user: User }>;
 
 export function useDocument<T>(
-  docRef: DocumentReference<T>,
+  tableName: string,
+  id: string,
   options: { includeUser: true; allowNull?: boolean; disabled?: boolean }
 ): DataWithUser<T>;
 
 export function useDocument<T>(
-  docRef: DocumentReference<T>,
+  tableName: string,
+  id: string,
   options?: { includeUser?: false; allowNull?: boolean; disabled?: boolean }
 ): UseDocument<T>;
 
 export function useDocument<T>(
-  docRef: DocumentReference<T>,
+  tableName: string,
+  id: string,
   options?: { includeUser?: boolean; allowNull?: boolean; disabled?: boolean }
 ): UseDocument<T> | DataWithUser<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const cachedDocRef = useCacheRef(docRef);
-
   const { includeUser, allowNull, disabled } = options ?? {};
 
   useEffect(() => {
-    if (disabled) {
+    if (disabled || !id || id === 'null') {
       setData(null);
       setLoading(false);
       return;
@@ -44,35 +41,60 @@ export function useDocument<T>(
     setData(null);
     setLoading(true);
 
-    const populateUser = async (currentData: DataWithRef<T>): Promise<void> => {
-      const userData = await getDoc(
-        doc(usersCollection, currentData.createdBy)
-      );
-      const dataWithUser = { ...currentData, user: userData.data() };
+    const fetchData = async () => {
+      try {
+        const { data: result, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      setData(dataWithUser);
-      setLoading(false);
-    };
+        if (error) {
+          if (allowNull) {
+            setData(null);
+            setLoading(false);
+            return;
+          }
+          throw error;
+        }
 
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      const data = snapshot.data({ serverTimestamps: 'estimate' });
-
-      if (allowNull && !data) {
+        if (includeUser && result) {
+          const { data: user } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', result.created_by)
+            .single();
+          
+          setData({ ...result, user });
+        } else {
+          setData(result);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching document:', error);
         setData(null);
         setLoading(false);
-        return;
       }
+    };
 
-      if (includeUser) void populateUser(data as DataWithRef<T>);
-      else {
-        setData(data as T);
-        setLoading(false);
-      }
-    });
+    fetchData();
 
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cachedDocRef]);
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel(`${tableName}_${id}_changes`)
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: tableName, filter: `id=eq.${id}` },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [tableName, id, disabled, includeUser, allowNull]);
 
   return { data, loading };
 }
